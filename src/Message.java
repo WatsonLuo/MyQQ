@@ -23,22 +23,34 @@ class ChatMessage extends Message {
 		this.msgContent = msgContent;
 	}
 
-	public String getMsgContent() {
-		return msgContent;
-	}
+	public String getMsgContent() {return msgContent;}
 
-	public void setMsgContent(String msgContent) {
-		this.msgContent = msgContent;
-	}
+	public void setMsgContent(String msgContent) {this.msgContent = msgContent;}
 
-	public boolean isPubChatMessage() {
-		return getDstUser().equals("");
-	}
+	public boolean isPubChatMessage() {return getDstUser().equals("");}
 }
 
 
 enum userState
-{onLine,offLine,busy,active}
+{
+	offLine("离线",0),
+	onLine("在线",1),
+	busy("勿扰",2),
+	active("等撩",3),
+	hidden("隐身",4);
+	private String name;
+	private int index;
+	private userState(String name,int index)
+	{
+		this.name=name;
+		this.index=index;
+	}
+	public static String getName(int index) {  
+		for (userState s : userState.values())
+		{if (s.ordinal() == index) {return s.name;}}  
+	    return null;
+	}
+}
 class UserStateMessage extends Message {
 	private userState userState;
 

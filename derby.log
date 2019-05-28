@@ -1,13 +1,17 @@
-----------------------------------------------------------------
-Wed May 15 21:54:25 CST 2019:
-正在使用类加载程序 jdk.internal.loader.ClassLoaders$AppClassLoader@28c97a5 引导数据库
-目录 E:\Study\计算机网络课程设计\第二模块-网络聊天程序-ppt\MyQQ\UserDB 中的 Derby 版本 The Apache Software Foundation - Apache Derby - 10.15.1.3 - (1853019) 实例 a816c00e-016a-bbc5-d2d6-0000071b7bf8
-已从 file:/E:/Study/%e8%ae%a1%e7%ae%97%e6%9c%ba%e7%bd%91%e7%bb%9c%e8%af%be%e7%a8%8b%e8%ae%be%e8%ae%a1/%e7%ac%ac%e4%ba%8c%e6%a8%a1%e5%9d%97-%e7%bd%91%e7%bb%9c%e8%81%8a%e5%a4%a9%e7%a8%8b%e5%ba%8f-ppt/MyQQ/lib/derby.jar 加载
-java.vendor=Oracle Corporation
-java.runtime.version=11.0.2+9-LTS
-user.dir=E:\Study\计算机网络课程设计\第二模块-网络聊天程序-ppt\MyQQ
-os.name=Windows 10
-os.arch=amd64
-os.version=10.0
-derby.system.home=null
-数据库类加载程序已启动 - derby.database.classpath=''
+Tue May 28 14:02:33 CST 2019 : 无法监听主机 localhost 上的端口 1527：
+ java.net.BindException: Address already in use: NET_Bind
+网络服务器启动期间引发异常错误。DRDA_ListenPort.S:无法监听主机 localhost 上的端口 1527：
+ java.net.BindException: Address already in use: NET_Bind
+java.lang.reflect.InvocationTargetException
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:566)
+	at org.apache.derby.iapi.jdbc.DRDAServerStarter.run(DRDAServerStarter.java:236)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+Caused by: java.lang.Exception: DRDA_ListenPort.S:无法监听主机 localhost 上的端口 1527：
+ java.net.BindException: Address already in use: NET_Bind
+	at org.apache.derby.impl.drda.NetworkServerControlImpl.consolePropertyMessageWork(NetworkServerControlImpl.java:3516)
+	at org.apache.derby.impl.drda.NetworkServerControlImpl.consolePropertyMessage(NetworkServerControlImpl.java:2107)
+	at org.apache.derby.impl.drda.NetworkServerControlImpl.blockingStart(NetworkServerControlImpl.java:850)
+	... 6 more

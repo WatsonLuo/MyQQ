@@ -52,46 +52,15 @@ public class Server extends JFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		  String driver = "org.apache.derby.jdbc.EmbeddedDriver";//在derby.jar里面
-	      String dbName="UserDB";
-	      String dbURL = "jdbc:derby:"+dbName+";create=true";//create=true表示当数据库不存在时就创建它
-
-	      try {  
-	    	Class.forName(driver);
-	        Connection conn = DriverManager.getConnection(dbURL);//启动嵌入式数据库
-	        Statement st = conn.createStatement();
-	        
-//	  		String createString = "create table USERTABLE " // 表名
-//					+ "(USERNAME varchar(20) primary key not null, " // 用户名
-//					+ "HASHEDPWD char(20) for bit data, " // 口令的HASH值
-//					+ "REGISTERTIME timestamp default CURRENT_TIMESTAMP)"; // 注册时间
-	        
-
-	        st.execute("drop table SignMessage");//用于删除表
-	        st.execute("create table SignMessage ("
-	        		+ "ID VARCHAR(10) primary key NOT NULL,"
-	        		+ "Password VARCHAR(20) NOT NULL,"
-	        		+ "Name VARCHAR(20) NOT NULL)");//创建SignMessage表
-	      
-	        st.executeUpdate("insert into SignMessage(ID,Password,Name) "
-	        		+"values ('123','123','aaa')");//插入一条数据
-	        st.executeUpdate("insert into SignMessage(ID,Password,Name) "
-	    	        +"values ('456','456','bbb')");//插入一条数据
-	        st.executeUpdate("insert into SignMessage(ID,Password,Name) "
-	    	        +"values ('789','789','ccc')");//插入一条数据
-	    	                    
-	  		ResultSet rs = st.executeQuery("select * from SignMessage");//读取刚插入的数据
-	        while(rs.next()){
-	            System.out.println("ID为："+rs.getString(1)
-	            	+"\t密码为："+rs.getString(2)
-	            	+"\t昵称为："+rs.getString(3));
-	        }
-	      } 
-	      catch(Exception e){e.printStackTrace();}
-		
-		
-		
-		
+		 
+		DerbyDB.prepareDB();
+		DerbyDB.createAccountTable();
+//		System.out.println("修改前");
+//		DerbyDB.showAccountTable();
+//		DerbyDB.deleteAccountTable("295579588");
+//		DerbyDB.insertAccountTable("295579587", "luojingyi", "100", 1);
+//		System.out.println("修改后");
+//		DerbyDB.showAccountTable();
 		EventQueue.invokeLater(new Runnable() {
 			@Override
 			public void run() {
@@ -105,9 +74,6 @@ public class Server extends JFrame {
 		});
 	}
 
-	/**
-	 * Create the frame.
-	 */
 	public Server() {
 		setTitle("\u670D\u52A1\u5668");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -173,10 +139,8 @@ public class Server extends JFrame {
 									// 并把serverSocket.accept()方法返回的socket对象交给“用户服务线程”来处理
 									UserHandler userHandler = new UserHandler(socket);
 									new Thread(userHandler).start();
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
+								} 
+								catch (IOException e) {e.printStackTrace();}
 							}
 						};
 					}.start();
@@ -210,6 +174,7 @@ public class Server extends JFrame {
 		});
 	}
 
+	//对客户端发来的消息进行处理
 	class UserHandler implements Runnable {
 		private final Socket currentUserSocket;
 		private ObjectInputStream ois;
@@ -219,11 +184,9 @@ public class Server extends JFrame {
 			this.currentUserSocket = currentUserSocket;
 			try {
 				ois = new ObjectInputStream(currentUserSocket.getInputStream());
-				oos = new ObjectOutputStream(
-						currentUserSocket.getOutputStream());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+				oos = new ObjectOutputStream(currentUserSocket.getOutputStream());
+			} 
+			catch (IOException e) {e.printStackTrace();}
 		}
 
 		@Override
@@ -242,22 +205,18 @@ public class Server extends JFrame {
 						System.err.println("用户发来的消息格式错误!");
 					}
 				}
-			} catch (IOException e) {
-				if (e.toString().endsWith("Connection reset")) {
-					System.out.println("客户端退出");
-					// 如果用户未发送下线消息就直接关闭了客户端，应该在这里补充代码，删除用户在线信息
-				} else {
-					e.printStackTrace();
-				}
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} finally {
+			} 
+			catch (IOException e) {
+				// 如果用户未发送下线消息就直接关闭了客户端，应该在这里补充代码，删除用户在线信息
+				if (e.toString().endsWith("Connection reset")) 
+				{System.out.println("客户端退出");} 
+				else {e.printStackTrace();}
+			} 
+			catch (ClassNotFoundException e) {e.printStackTrace();} 
+			finally {
 				if (currentUserSocket != null) {
-					try {
-						currentUserSocket.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+					try {currentUserSocket.close();} 
+					catch (IOException e) {e.printStackTrace();}
 				}
 			}
 		}
@@ -266,6 +225,7 @@ public class Server extends JFrame {
 		private void transferMsgToOtherUsers(Message msg) {
 			String[] users = userManager.getAllUsers();
 			for (String user : users) {
+				//当前在线用户非消息发送方
 				if (userManager.getUserSocket(user) != currentUserSocket) {
 					try {
 						ObjectOutputStream o = userManager.getUserOos(user);
@@ -273,11 +233,26 @@ public class Server extends JFrame {
 							o.writeObject(msg);
 							o.flush();
 						}
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+					} 
+					catch (IOException e) {e.printStackTrace();}
 				}
 			}
+		}
+		private void transferMsgToTheUsers(Message msg,String dstID) {
+			try {
+				ObjectOutputStream o = userManager.getUserOos(dstID);
+				if(o==null)System.out.println("用户："+dstID+"未上线！存储为离线消息！");
+				else 
+				{
+					synchronized (o) {
+						System.out.println("成功获得o权限");
+						o.writeObject(msg);
+						o.flush();
+						System.out.println("成功发送o");
+					}
+				} 
+			}	
+			catch (IOException e) {e.printStackTrace();}
 		}
 
 		// 处理用户状态消息
@@ -347,14 +322,18 @@ public class Server extends JFrame {
 			String msgContent = msg.getMsgContent();
 			if (userManager.hasUser(srcUser)) {
 				// 用黑色文字将收到消息的时间、发送消息的用户名和消息内容添加到“消息记录”文本框中
-				final String msgRecord = dateFormat.format(new Date()) + " "
-						+ srcUser + "说: " + msgContent + "\r\n";
-				addMsgRecord(msgRecord, Color.black, 12, false, false);
 				if (msg.isPubChatMessage()) {
 					// 将公聊消息转发给所有其它在线用户
+					final String msgRecord = dateFormat.format(new Date()) + " "
+							+ srcUser + "说: " + msgContent + "\r\n";
+					addMsgRecord(msgRecord, Color.black, 12, false, false);
 					transferMsgToOtherUsers(msg);
 				} else {
-					// 将私聊消息转发给目标用户，这里未实现
+					// 将私聊消息转发给目标用户
+					final String msgRecord = dateFormat.format(new Date()) + " "
+							+ srcUser + "对"+dstUser+"说: " + msgContent + "\r\n";
+					addMsgRecord(msgRecord, Color.pink, 12, false, false);
+					transferMsgToTheUsers(msg,dstUser);
 				}
 			} else {
 				// 这种情况对应着用户未发送上线消息就直接发送了聊天消息，应该发消息提示客户端，这里从略
@@ -366,45 +345,36 @@ public class Server extends JFrame {
 
 }
 
-// 管理在线用户信息
+// 管理在线用户信息,全靠内部Map类型的onLineUsers
 class UserManager {
 	private final Map<String, User> onLineUsers;
 
-	public UserManager() {
-		onLineUsers = new HashMap<String, User>();
-	}
-
+	public UserManager() {onLineUsers = new HashMap<String, User>();}
+	
 	// 判断某用户是否在线
-	public boolean hasUser(String userName) {
-		return onLineUsers.containsKey(userName);
-	}
+	public boolean hasUser(String userName) {return onLineUsers.containsKey(userName);}
 
 	// 判断在线用户列表是否空
-	public boolean isEmpty() {
-		return onLineUsers.isEmpty();
-	}
+	public boolean isEmpty() {return onLineUsers.isEmpty();}
 
 	// 获取在线用户的Socket的的输出流封装成的对象输出流
 	public ObjectOutputStream getUserOos(String userName) {
-		if (hasUser(userName)) {
-			return onLineUsers.get(userName).getOos();
-		}
+		if (hasUser(userName)) 
+		{return onLineUsers.get(userName).getOos();}
 		return null;
 	}
 
 	// 获取在线用户的Socket的的输入流封装成的对象输入流
 	public ObjectInputStream getUserOis(String userName) {
-		if (hasUser(userName)) {
-			return onLineUsers.get(userName).getOis();
-		}
+		if (hasUser(userName)) 
+		{return onLineUsers.get(userName).getOis();}
 		return null;
 	}
 
 	// 获取在线用户的Socket
 	public Socket getUserSocket(String userName) {
-		if (hasUser(userName)) {
-			return onLineUsers.get(userName).getSocket();
-		}
+		if (hasUser(userName)) 
+		{return onLineUsers.get(userName).getSocket();}
 		return null;
 	}
 
@@ -418,8 +388,7 @@ class UserManager {
 	}
 
 	// 添加在线用户
-	public boolean addUser(String userName, Socket userSocket,
-			ObjectOutputStream oos, ObjectInputStream ios) {
+	public boolean addUser(String userName, Socket userSocket,ObjectOutputStream oos, ObjectInputStream ios) {
 		if ((userName != null) && (userSocket != null) && (oos != null)
 				&& (ios != null)) {
 			onLineUsers.put(userName, new User(userSocket, oos, ios));
@@ -441,16 +410,13 @@ class UserManager {
 	public String[] getAllUsers() {
 		String[] users = new String[onLineUsers.size()];
 		int i = 0;
-		for (Map.Entry<String, User> entry : onLineUsers.entrySet()) {
-			users[i++] = entry.getKey();
-		}
+		for (Map.Entry<String, User> entry : onLineUsers.entrySet()) 
+		{users[i++] = entry.getKey();}
 		return users;
 	}
 
 	// 获取在线用户个数
-	public int getOnlineUserCount() {
-		return onLineUsers.size();
-	}
+	public int getOnlineUserCount() {return onLineUsers.size();}
 }
 
 class User {
@@ -489,6 +455,5 @@ class User {
 		this.ois = ois;
 		this.logonTime = logonTime;
 	}
-
 
 }
