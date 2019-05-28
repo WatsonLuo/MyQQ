@@ -31,36 +31,43 @@ class ChatMessage extends Message {
 }
 
 
-enum userState
+enum userStatus
 {
 	offLine("ÀëÏß",0),
 	onLine("ÔÚÏß",1),
-	busy("ÎğÈÅ",2),
+	login("µÇÂ¼",2),
 	active("µÈÁÃ",3),
-	hidden("ÒşÉí",4);
+	hidden("ÒşÉí",4),
+	busy("ÎğÈÅ",5);
 	private String name;
 	private int index;
-	private userState(String name,int index)
+	private userStatus(String name,int index)
 	{
 		this.name=name;
 		this.index=index;
 	}
+	public static userStatus getStatus(String name) {
+		for (userStatus s : userStatus.values())
+		{if (s.name.equals(name)) {return s;}}  
+	    return null;
+	}
+	public String getName() {return name;}
 	public static String getName(int index) {  
-		for (userState s : userState.values())
+		for (userStatus s : userStatus.values())
 		{if (s.ordinal() == index) {return s.name;}}  
 	    return null;
 	}
 }
 class UserStateMessage extends Message {
-	private userState userState;
+	private userStatus userStatus;
 
-	public UserStateMessage(String srcUser, String dstUser, userState userState) {
+	public UserStateMessage(String srcUser, String dstUser, userStatus userStatus) {
 		super(srcUser, dstUser);
-		this.userState = userState;
+		this.userStatus = userStatus;
 	}
 
-	public userState getUserState() {return userState;}
-	public void setUserState(userState userState) {this.userState = userState;}
+	public userStatus getUserState() {return userStatus;}
+	public void setUserState(userStatus userStatus) {this.userStatus = userStatus;}
 
 	public boolean isPubUserStateMessage() {return getDstUser().equals("");}
 }

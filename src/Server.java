@@ -102,12 +102,13 @@ public class Server extends JFrame {
 		scrollPaneOnlineUsers.setPreferredSize(new Dimension(100, 300));
 		splitPaneNorth.setRightComponent(scrollPaneOnlineUsers);
 
-		onlineUsersDtm.addColumn("用户名");
+		onlineUsersDtm.addColumn("ID");
 		onlineUsersDtm.addColumn("IP");
 		onlineUsersDtm.addColumn("端口");
 		onlineUsersDtm.addColumn("登录时间");
+		onlineUsersDtm.addColumn("状态");
 		tableOnlineUsers = new JTable(onlineUsersDtm);
-		tableOnlineUsers.setPreferredSize(new Dimension(100, 270));
+		tableOnlineUsers.setPreferredSize(new Dimension(120, 270));
 		tableOnlineUsers.setFillsViewportHeight(true); // 让JTable充满它的容器
 		scrollPaneOnlineUsers.setViewportView(tableOnlineUsers);
 
@@ -115,7 +116,7 @@ public class Server extends JFrame {
 		contentPane.add(panelSouth, BorderLayout.SOUTH);
 		panelSouth.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 
-		final JButton btnStart = new JButton("\u542F\u52A8");
+		final JButton btnStart = new JButton("启动服务器");
 		// "启动"按钮
 		btnStart.addActionListener(new ActionListener() {
 			@Override
@@ -258,40 +259,89 @@ public class Server extends JFrame {
 		// 处理用户状态消息
 		private void processUserStateMessage(UserStateMessage msg) {
 			String srcUser = msg.getSrcUser();
-			if (msg.getUserState()!=userState.offLine) { // 用户上线消息
+			UserStateMessage userStateMessage=null;
+			if (msg.getUserState()!=userStatus.offLine) { // 用户上线消息
 				if (userManager.hasUser(srcUser)) {
-					// 这种情况对应着用户重复登录，应该发消息提示客户端，这里从略
-					System.err.println("用户重复登录");
-					return;
+					if(msg.getUserState()==userStatus.login)
+					{
+						// 这种情况对应着用户重复登录，应该发消息提示客户端，这里从略
+						try 
+						{
+							userStateMessage = new UserStateMessage(srcUser,srcUser,userStatus.offLine);
+							synchronized (userStateMessage) {
+								oos.writeObject(userStateMessage);
+								oos.flush();
+							}
+						}
+						catch (IOException e) {e.printStackTrace();}
+						System.err.println("用户重复登录");
+						return;
+					}
+					else{
+						//更改用户状态
+						transferMsgToOtherUsers(msg);
+						// 将用户信息加入到“在线用户”列表中
+						for (int i = 0; i < onlineUsersDtm.getRowCount(); i++) {
+							if (onlineUsersDtm.getValueAt(i, 0).equals(srcUser)) {
+								onlineUsersDtm.removeRow(i);
+								onlineUsersDtm.addRow(new Object[] { srcUser,
+										currentUserSocket.getInetAddress().getHostAddress(),
+										currentUserSocket.getPort(),
+										dateFormat.format(new Date()),
+										msg.getUserState().getName()});
+								break;
+							}
+						}
+						userManager.addUser(srcUser, currentUserSocket, msg.getUserState(), oos, ois);
+						// 用绿色文字将用户名和用户上线时间添加到“消息记录”文本框中
+						String ip = currentUserSocket.getInetAddress().getHostAddress();
+						final String msgRecord = dateFormat.format(new Date()) + " "
+								+ srcUser + "(" + ip + ")" + "更改状态为："+msg.getUserState().getName()+"!\r\n";
+						addMsgRecord(msgRecord, Color.green, 12, false, false);
+					}
 				}
-				// 向新上线的用户转发当前在线用户列表
-				String[] users = userManager.getAllUsers();
-				try {
-					for (String user : users) {
-						UserStateMessage userStateMessage = new UserStateMessage(
-								user, srcUser, msg.getUserState());
+				else {
+					//新用户登录
+					try 
+					{
+						userStateMessage = new UserStateMessage(srcUser,srcUser,userStatus.onLine);
 						synchronized (userStateMessage) {
 							oos.writeObject(userStateMessage);
 							oos.flush();
 						}
 					}
-				} catch (IOException e) {
-					e.printStackTrace();
+					catch (IOException e) {e.printStackTrace();}
+
+					// 向新上线的用户转发当前在线用户列表
+					String[] users = userManager.getAllUsers();
+					try {
+						for (String user : users) {
+							userStateMessage = new UserStateMessage(
+									user, srcUser, msg.getUserState());
+							synchronized (userStateMessage) {
+								oos.writeObject(userStateMessage);
+								oos.flush();
+							}
+						}
+					} 
+					catch (IOException e) {e.printStackTrace();}
+					// 向所有其它在线用户转发用户上线消息
+					transferMsgToOtherUsers(msg);
+					// 将用户信息加入到“在线用户”列表中
+					onlineUsersDtm.addRow(new Object[] { srcUser,
+							currentUserSocket.getInetAddress().getHostAddress(),
+							currentUserSocket.getPort(),
+							dateFormat.format(new Date()),
+							(msg.getUserState()==userStatus.login?"在线":msg.getUserState().getName())});
+					userManager.addUser(srcUser, currentUserSocket, msg.getUserState(), oos, ois);
+					// 用绿色文字将用户名和用户上线时间添加到“消息记录”文本框中
+					String ip = currentUserSocket.getInetAddress().getHostAddress();
+					final String msgRecord = dateFormat.format(new Date()) + " "
+							+ srcUser + "(" + ip + ")" + "上线了!\r\n";
+					addMsgRecord(msgRecord, Color.green, 12, false, false);
 				}
-				// 向所有其它在线用户转发用户上线消息
-				transferMsgToOtherUsers(msg);
-				// 将用户信息加入到“在线用户”列表中
-				onlineUsersDtm.addRow(new Object[] { srcUser,
-						currentUserSocket.getInetAddress().getHostAddress(),
-						currentUserSocket.getPort(),
-						dateFormat.format(new Date()) });
-				userManager.addUser(srcUser, currentUserSocket, oos, ois);
-				// 用绿色文字将用户名和用户上线时间添加到“消息记录”文本框中
-				String ip = currentUserSocket.getInetAddress().getHostAddress();
-				final String msgRecord = dateFormat.format(new Date()) + " "
-						+ srcUser + "(" + ip + ")" + "上线了!\r\n";
-				addMsgRecord(msgRecord, Color.green, 12, false, false);
-			} else { // 用户下线消息
+			}
+			else { // 用户下线消息
 				if (!userManager.hasUser(srcUser)) {
 					// 这种情况对应着用户未发送上线消息就直接发送了下线消息，应该发消息提示客户端，这里从略
 					System.err.println("用户未发送登录消息就发送了下线消息");
@@ -379,24 +429,34 @@ class UserManager {
 	}
 
 	// 添加在线用户
-	public boolean addUser(String userName, Socket userSocket) {
+	public boolean addUser(String userName, Socket userSocket,userStatus userStatus) {
 		if ((userName != null) && (userSocket != null)) {
-			onLineUsers.put(userName, new User(userSocket));
+			onLineUsers.put(userName, new User(userSocket,userStatus));
 			return true;
 		}
 		return false;
 	}
 
 	// 添加在线用户
-	public boolean addUser(String userName, Socket userSocket,ObjectOutputStream oos, ObjectInputStream ios) {
+	public boolean addUser(String userName, Socket userSocket,userStatus userStatus,
+			ObjectOutputStream oos, ObjectInputStream ios) {
 		if ((userName != null) && (userSocket != null) && (oos != null)
 				&& (ios != null)) {
-			onLineUsers.put(userName, new User(userSocket, oos, ios));
+			onLineUsers.put(userName, new User(userSocket, userStatus,oos, ios));
 			return true;
 		}
 		return false;
 	}
 
+	public boolean resetStatus(String userName,userStatus userStatus) {
+		if (hasUser(userName)) {
+			User user=new User(onLineUsers.get(userName), userStatus);
+			onLineUsers.put(userName, user);
+			return true;
+		}
+		return false;
+	}
+	
 	// 删除在线用户
 	public boolean removeUser(String userName) {
 		if (hasUser(userName)) {
@@ -424,14 +484,25 @@ class User {
 	private ObjectOutputStream oos;
 	private ObjectInputStream ois;
 	private final Date logonTime;
+	private final userStatus status;
 
 	public Socket getSocket() {return socket;}
 	public ObjectOutputStream getOos() {return oos;}
 	public ObjectInputStream getOis() {return ois;}
 	public Date getLogonTime() {return logonTime;}
+	public userStatus getStatus() {return status;}
 	
-	public User(Socket socket) {
+	public User(User user,userStatus status) {
+		socket=user.getSocket();
+		oos=user.getOos();
+		ois=user.getOis();
+		logonTime=user.getLogonTime();
+		this.status=status;
+	}
+	
+	public User(Socket socket,userStatus status) {
 		this.socket = socket;
+		this.status=status;
 		try {
 			oos = new ObjectOutputStream(socket.getOutputStream());
 			ois = new ObjectInputStream(socket.getInputStream());
@@ -441,16 +512,17 @@ class User {
 		logonTime = new Date();
 	}
 
-	public User(Socket socket, ObjectOutputStream oos, ObjectInputStream ois) {
+	public User(Socket socket, userStatus status,ObjectOutputStream oos, ObjectInputStream ois) {
 		this.socket = socket;
+		this.status=status;
 		this.oos = oos;
 		this.ois = ois;
 		logonTime = new Date();
 	}
 
-	public User(Socket socket, ObjectOutputStream oos, ObjectInputStream ois,
-			Date logonTime) {
+	public User(Socket socket,userStatus status, ObjectOutputStream oos, ObjectInputStream ois,Date logonTime) {
 		this.socket = socket;
+		this.status=status;
 		this.oos = oos;
 		this.ois = ois;
 		this.logonTime = logonTime;

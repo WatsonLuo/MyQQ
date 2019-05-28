@@ -226,6 +226,10 @@ public class UISignIN extends JFrame {
 				{
 					passwordField.setText("");
 				}	
+				else if(result==4)//可能是重复登录
+				{
+					System.out.println("重复登录！");;
+				}	
 			}
 		});
 		registerButton.addActionListener(new ActionListener() {
@@ -274,16 +278,31 @@ public class UISignIN extends JFrame {
 					System.exit(0);
 				}
 				// 向服务器发送用户上线信息，将自己的用户名和IP地址发送给服务器
-				UserStateMessage userStateMessage = new UserStateMessage(ID, "", userState.onLine);
+				UserStateMessage userStateMessage = new UserStateMessage(ID, "", userStatus.login);
 				try 
 				{
 					oos.writeObject(userStateMessage);
 					oos.flush();
 				} 
 				catch (IOException e1) {e1.printStackTrace();}
-				// 在“消息记录”文本框中用红色添加“XX时间登录成功”的信息
-				String msgRecord = dateFormat.format(new Date())+ " 登录成功\r\n";
-				return 0;
+
+				try {
+					Message msg =(Message)ois.readObject();
+					if(msg.getDstUser().equals(msg.getSrcUser()))
+							if(((UserStateMessage)msg).getUserState()==userStatus.offLine)
+					{JOptionPane.showMessageDialog(null,"此账号已登录，请勿重复登录！");}
+					else if(((UserStateMessage)msg).getUserState()==userStatus.onLine)
+					{
+						// 在“消息记录”文本框中用红色添加“XX时间登录成功”的信息
+						String msgRecord = dateFormat.format(new Date())+ " 登录成功\r\n";
+						return 0;	
+					}
+				} 
+				catch (ClassNotFoundException | IOException e) {e.printStackTrace();}
+				return 4;
+////				 在“消息记录”文本框中用红色添加“XX时间登录成功”的信息
+//				String msgRecord = dateFormat.format(new Date())+ " 登录成功\r\n";
+//				return 0;	
 			}
 			else 
 			{

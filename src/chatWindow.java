@@ -309,7 +309,7 @@ public class chatWindow extends JFrame {
 		private void processUserStateMessage(UserStateMessage msg) {
 			String srcUser = msg.getSrcUser();
 			String dstUser = msg.getDstUser();
-			if (msg.getUserState()!=userState.offLine) {
+			if (msg.getUserState()!=userStatus.offLine) {
 				if (msg.isPubUserStateMessage()) { // 新用户上线消息
 					// 用绿色文字将用户名和用户上线时间添加到“消息记录”文本框中
 					final String msgRecord = dateFormat.format(new Date())+ " " + srcUser + "上线了!\r\n";
@@ -321,7 +321,7 @@ public class chatWindow extends JFrame {
 					onlinUserDlm.addElement(srcUser);
 				}
 			} 
-			else if (msg.getUserState()==userState.offLine) { // 用户下线消息
+			else if (msg.getUserState()==userStatus.offLine) { // 用户下线消息
 				if (onlinUserDlm.contains(srcUser)) {
 					// 用绿色文字将用户名和用户下线时间添加到“消息记录”文本框中
 					final String msgRecord = dateFormat.format(new Date())

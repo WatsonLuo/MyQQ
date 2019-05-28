@@ -36,16 +36,16 @@ public class friendList extends JFrame {
 	DefaultTableModel defaultTableModel=new DefaultTableModel(new String[]{"ID","名称","类别","状态"}, 0)
 	{public boolean isCellEditable(int row, int column){return false;}};
 	
-	public static void main(String[] args) {
-		DerbyDB.prepareDB();
-		DerbyDB.createAccountTable();
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {new friendList("295579587",null,null,null);} 
-				catch (Exception e) {e.printStackTrace();}
-			}
-		});
-	}
+//	public static void main(String[] args) {
+//		DerbyDB.prepareDB();
+//		DerbyDB.createAccountTable();
+//		EventQueue.invokeLater(new Runnable() {
+//			public void run() {
+//				try {new friendList("295579587",null,null,null);} 
+//				catch (Exception e) {e.printStackTrace();}
+//			}
+//		});
+//	}
 
 	public friendList(String id,Socket fatherSocket,ObjectOutputStream fao,ObjectInputStream fai) {
 		Font bigFont=new Font("宋体",Font.PLAIN,20);
@@ -94,7 +94,7 @@ public class friendList extends JFrame {
 				if("隐身".equals(statusString)) 
 				{statusIMGJLabel.setIcon(new ImageIcon("img\\status\\隐身.jpg"));}
 				// 向服务器发送用户上线信息，将自己的用户名和IP地址发送给服务器
-				UserStateMessage userStateMessage = new UserStateMessage(id, "", userState.valueOf(statusString));
+				UserStateMessage userStateMessage = new UserStateMessage(id, "", userStatus.getStatus(statusString));
 				try 
 				{
 					fao.writeObject(userStateMessage);
@@ -196,7 +196,15 @@ public class friendList extends JFrame {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				// TODO Auto-generated method stub
-				
+				if(!statusComboBox.getSelectedItem().equals("离线")){
+					UserStateMessage userStateMessage = new UserStateMessage(id, "", userStatus.offLine);
+					try 
+					{
+						fao.writeObject(userStateMessage);
+						fao.flush();
+					} 
+					catch (IOException e1) {e1.printStackTrace();}
+				}
 			}
 			
 			@Override
@@ -238,7 +246,7 @@ public class friendList extends JFrame {
 				id=resultSet.getString("ID");
 				name=resultSet.getString("Name");
 				type="好友";
-				status=userState.getName(resultSet.getInt("Status"));
+				status=userStatus.getName(resultSet.getInt("Status"));
 				defaultTableModel.addRow(new Object[]{id,name,type,status});
 			}
 //			Vector header = new Vector();// 列名向量，使用它的add()方法添加列名
