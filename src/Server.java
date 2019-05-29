@@ -32,8 +32,6 @@ import javax.swing.text.Document;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
-import org.apache.derby.tools.sysinfo;
-
 public class Server extends JFrame {
 	private ServerSocket serverSocket;
 	private final int port = 9999;
@@ -58,9 +56,9 @@ public class Server extends JFrame {
 		DerbyDB.prepareDB();
 		DerbyDB.createAccountTable();
 //		System.out.println("修改前");
-//		DerbyDB.showAccountTable();
+		DerbyDB.showAccountTable();
 //		DerbyDB.deleteAccountTable("295579588");
-//		DerbyDB.insertAccountTable("295579587", "luojingyi", "100", 1);
+//		DerbyDB.insertAccountTable("295579587", "luojingyi", "100", 10);
 //		System.out.println("修改后");
 //		DerbyDB.showAccountTable();
 		EventQueue.invokeLater(new Runnable() {
@@ -200,6 +198,7 @@ public class Server extends JFrame {
 			try {
 				while (true) {
 					Message msg = (Message) ois.readObject();
+					System.out.println("服务器收到来自"+msg.getSrcUser()+"发送到"+msg.getDstUser()+"的信息");
 					if (msg instanceof UserStateMessage) {
 						// 处理用户状态消息
 						processUserStateMessage((UserStateMessage) msg);
@@ -251,10 +250,8 @@ public class Server extends JFrame {
 				else 
 				{
 					synchronized (o) {
-						System.out.println("成功获得o权限");
 						o.writeObject(msg);
 						o.flush();
-						System.out.println("成功发送o");
 					}
 				} 
 			}	
@@ -285,6 +282,7 @@ public class Server extends JFrame {
 					else{
 						//更改用户状态
 						transferMsgToOtherUsers(msg);
+						transferMsgToTheUsers(msg, srcUser);
 						// 将用户信息加入到“在线用户”列表中
 						for (int i = 0; i < onlineUsersDtm.getRowCount(); i++) {
 							if (onlineUsersDtm.getValueAt(i, 0).equals(srcUser)) {
@@ -303,9 +301,7 @@ public class Server extends JFrame {
 						final String msgRecord = dateFormat.format(new Date()) + " "
 								+ srcUser + "(" + ip + ")" + "更改状态为："+msg.getUserState().getName()+"!\r\n";
 						addMsgRecord(msgRecord, Color.green, 12, false, false);
-						if(DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex()))
-							System.out.println("DBstatus修改成功");//ordinal
-						else System.out.println("DBstatus修改失败");
+						DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex());
 					}
 				}
 				else {
@@ -324,8 +320,7 @@ public class Server extends JFrame {
 					String[] users = userManager.getAllUsers();
 					try {
 						for (String user : users) {
-							userStateMessage = new UserStateMessage(
-									user, srcUser, msg.getUserState());
+							userStateMessage = new UserStateMessage(user, srcUser, msg.getUserState());
 							synchronized (userStateMessage) {
 								oos.writeObject(userStateMessage);
 								oos.flush();
@@ -335,6 +330,7 @@ public class Server extends JFrame {
 					catch (IOException e) {e.printStackTrace();}
 					// 向所有其它在线用户转发用户上线消息
 					transferMsgToOtherUsers(msg);
+					transferMsgToTheUsers(msg, srcUser);
 					// 将用户信息加入到“在线用户”列表中
 					onlineUsersDtm.addRow(new Object[] { srcUser,
 							currentUserSocket.getInetAddress().getHostAddress(),
@@ -347,9 +343,8 @@ public class Server extends JFrame {
 					final String msgRecord = dateFormat.format(new Date()) + " "
 							+ srcUser + "(" + ip + ")" + "上线了!\r\n";
 					addMsgRecord(msgRecord, Color.green, 12, false, false);
-					if(DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex()))
-						System.out.println("DBstatus登录成功");//ordinal
-					else System.out.println("DBstatus登录失败");
+					userStatus s=msg.getUserState()==userStatus.login?userStatus.onLine:msg.getUserState();
+					DerbyDB.resetStatus(srcUser, s.getIndex());
 				}
 			}
 			else { // 用户下线消息
@@ -358,6 +353,9 @@ public class Server extends JFrame {
 					System.err.println("用户未发送登录消息就发送了下线消息");
 					return;
 				}
+				// 将用户下线消息转发给所有其它在线用户
+				transferMsgToOtherUsers(msg);
+				transferMsgToTheUsers(msg, srcUser);
 				// 用绿色文字将用户名和用户下线时间添加到“消息记录”文本框中
 				String ip = userManager.getUserSocket(srcUser).getInetAddress()
 						.getHostAddress();
@@ -371,11 +369,7 @@ public class Server extends JFrame {
 						onlineUsersDtm.removeRow(i);
 					}
 				}
-				if(DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex()))
-					System.out.println("DBstatus离线成功");//ordinal
-				else System.out.println("DBstatus离线失败");
-				// 将用户下线消息转发给所有其它在线用户
-				transferMsgToOtherUsers(msg);
+				DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex());
 			}
 		}
 

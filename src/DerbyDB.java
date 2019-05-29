@@ -81,7 +81,7 @@ public class DerbyDB {
       	   statement.executeUpdate("insert into AccountTable(ID,Password,Name,Status) "
    	       		+"values ('"+id+"','"+password+"','"+name+"',"+status+")");//插入一条数据
          } 
-         catch(Exception e){e.printStackTrace();}
+         catch(Exception e){e.printStackTrace();return false;}
 
 		return true;
 	}
@@ -107,8 +107,7 @@ public class DerbyDB {
 			return false;
 		}
 	}
-	
-	
+		
 	static public int getAccount0(String[] result)
      {
     	 try {
@@ -126,6 +125,25 @@ public class DerbyDB {
          }
      }
   
+	static public void setAccount0(String id,String password,int status)
+	{
+		try {
+			statement.executeUpdate("update AccountTable set "
+					+ "ID='"+id+"',"
+					+ "Password='"+password+"',"
+					+ "Status="+status
+					+" where Status>=10");
+		} catch (SQLException e) {e.printStackTrace();}
+	}
+	
+	static public void setAccount0(int status)
+	{
+		try {
+			statement.executeUpdate("update AccountTable set status="+status
+					+" where Status>=10");
+		} catch (SQLException e) {e.printStackTrace();}
+	}
+	
 	static public ResultSet getAccountTable()
     {
     	ResultSet rs = null;

@@ -109,9 +109,9 @@ public class UISignIN extends JFrame {
 		passwordBox.add(Box.createHorizontalStrut(10));
 		passwordBox.add(passwordJLabel);
 		passwordBox.add(passwordField);
-		if(rememberME>0)
+		if(rememberME==11)
 		{
-			IDField.setText(account[0]);
+			IDField.setText(account[0].substring(1));
 			passwordField.setText(account[1]);
 		}
 		
@@ -123,10 +123,10 @@ public class UISignIN extends JFrame {
 		functionBox.add(rememberMeBox);
 		functionBox.add(autoBox);
 
-		if(rememberME>0)
+		if(rememberME>10)
 		{
 			rememberMeBox.setSelected(true);
-			if(rememberME==2)autoBox.setSelected(true);
+			if(rememberME==12)autoBox.setSelected(true);
 		}
 		autoBox.addActionListener(new ActionListener() {
 			
@@ -161,7 +161,7 @@ public class UISignIN extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				
+				JOptionPane.showMessageDialog(null, "密码为："+DerbyDB.getPassword(IDField.getText()));
 			}
 		});
 		JButton showPasswordButton=new JButton("显示密码");
@@ -210,26 +210,30 @@ public class UISignIN extends JFrame {
 				int result=SignIN(IDField.getText(), String.valueOf(passwordField.getPassword()));
 				if(result==0)
 				{
+					if(rememberMeBox.isSelected()==true)
+					{
+						int auto=1;
+						if(autoBox.isSelected())auto++;
+						String idString='a'+IDField.getText();
+						String passwordString=String.valueOf(passwordField.getPassword());
+						DerbyDB.setAccount0(idString, passwordString, 10+auto);
+					}
+					else 
+					{DerbyDB.setAccount0(10);}
 					new friendList(IDField.getText(),socket,oos,ois);
 					signINJFrame.dispose();
 				}
 				else if(result==1)//未输入ID
-				{
-					passwordField.setText("");
-				}
+				{passwordField.setText("");}
 				else if(result==2)//无此ID
 				{
 					IDField.setText("");
 					passwordField.setText("");
 				}
 				else if(result==3)//密码错误
-				{
-					passwordField.setText("");
-				}	
+				{passwordField.setText("");}	
 				else if(result==4)//可能是重复登录
-				{
-					System.out.println("重复登录！");;
-				}	
+				{System.out.println("重复登录！");}	
 			}
 		});
 		registerButton.addActionListener(new ActionListener() {
@@ -316,11 +320,4 @@ public class UISignIN extends JFrame {
 			return 1;
 		}
 	}
-	
-	
-	
-	
-	
-	
-	
 }
