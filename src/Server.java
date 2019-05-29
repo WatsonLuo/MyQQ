@@ -32,6 +32,8 @@ import javax.swing.text.Document;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
+import org.apache.derby.tools.sysinfo;
+
 public class Server extends JFrame {
 	private ServerSocket serverSocket;
 	private final int port = 9999;
@@ -65,6 +67,9 @@ public class Server extends JFrame {
 			@Override
 			public void run() {
 				try {
+					/*你应该这样做：为JFrame2创建一个单独的类，使用单例模式（不懂的去查设计模式的书）
+					 * 在按钮事件中只处理一个实例（如：JFrame2.getInstance().setVisible(true) ）。
+					 * 写在这里，但感觉并不适合我这个情况*/
 					Server frame = new Server();
 					frame.setVisible(true);
 				} catch (Exception e) {
@@ -264,7 +269,7 @@ public class Server extends JFrame {
 				if (userManager.hasUser(srcUser)) {
 					if(msg.getUserState()==userStatus.login)
 					{
-						// 这种情况对应着用户重复登录，应该发消息提示客户端，这里从略
+						// 这种情况对应着用户重复登录
 						try 
 						{
 							userStateMessage = new UserStateMessage(srcUser,srcUser,userStatus.offLine);
@@ -298,6 +303,9 @@ public class Server extends JFrame {
 						final String msgRecord = dateFormat.format(new Date()) + " "
 								+ srcUser + "(" + ip + ")" + "更改状态为："+msg.getUserState().getName()+"!\r\n";
 						addMsgRecord(msgRecord, Color.green, 12, false, false);
+						if(DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex()))
+							System.out.println("DBstatus修改成功");//ordinal
+						else System.out.println("DBstatus修改失败");
 					}
 				}
 				else {
@@ -339,6 +347,9 @@ public class Server extends JFrame {
 					final String msgRecord = dateFormat.format(new Date()) + " "
 							+ srcUser + "(" + ip + ")" + "上线了!\r\n";
 					addMsgRecord(msgRecord, Color.green, 12, false, false);
+					if(DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex()))
+						System.out.println("DBstatus登录成功");//ordinal
+					else System.out.println("DBstatus登录失败");
 				}
 			}
 			else { // 用户下线消息
@@ -360,6 +371,9 @@ public class Server extends JFrame {
 						onlineUsersDtm.removeRow(i);
 					}
 				}
+				if(DerbyDB.resetStatus(srcUser, msg.getUserState().getIndex()))
+					System.out.println("DBstatus离线成功");//ordinal
+				else System.out.println("DBstatus离线失败");
 				// 将用户下线消息转发给所有其它在线用户
 				transferMsgToOtherUsers(msg);
 			}

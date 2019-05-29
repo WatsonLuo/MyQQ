@@ -51,6 +51,7 @@ enum userStatus
 		{if (s.name.equals(name)) {return s;}}  
 	    return null;
 	}
+	public int getIndex(){return index;}
 	public String getName() {return name;}
 	public static String getName(int index) {  
 		for (userStatus s : userStatus.values())

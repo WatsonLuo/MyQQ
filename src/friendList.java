@@ -1,4 +1,5 @@
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
@@ -14,11 +15,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.sql.ResultSet;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -33,8 +36,10 @@ import javax.swing.table.DefaultTableModel;
 
 public class friendList extends JFrame {
 	//设置表头并禁止编辑表格内容
-	DefaultTableModel defaultTableModel=new DefaultTableModel(new String[]{"ID","名称","类别","状态"}, 0)
+	protected DefaultTableModel defaultTableModel=new DefaultTableModel(new String[]{"ID","名称","类别","状态"}, 0)
 	{public boolean isCellEditable(int row, int column){return false;}};
+
+	private final DefaultListModel<String> onlinUserDlm = new DefaultListModel<String>();
 	
 //	public static void main(String[] args) {
 //		DerbyDB.prepareDB();
@@ -158,9 +163,6 @@ public class friendList extends JFrame {
 					String dstName=table.getValueAt(row, 1).toString();
 					if(chatWindow.isOpenned(dstID)) {/*确保与一个人的对话框只打开一次*/}
 					else {new chatWindow(id,dstID,dstName,fatherSocket,fao,fai);}
-					/*你应该这样做：为JFrame2创建一个单独的类，使用单例模式（不懂的去查设计模式的书）
-					 * 在按钮事件中只处理一个实例（如：JFrame2.getInstance().setVisible(true) ）。
-					 * 写在这里，但感觉并不适合我这个情况*/
 				}
 			}
 		});
@@ -264,4 +266,70 @@ public class friendList extends JFrame {
 			for(String[] row: rows){defaultTableModel.addRow(row);}
 		}
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+//	// 后台监听线程
+//		class ListeningHandler implements Runnable {
+//			@Override
+//			public void run() {
+//				try {
+//					while (true) {
+//						Message msg = null;
+//						synchronized (ois) {msg = (Message) ois.readObject();}
+//						if (msg instanceof UserStateMessage) {
+//							// 处理用户状态消息
+//							processUserStateMessage((UserStateMessage) msg);
+//						} 
+//						else {
+//							// 这种情况对应着用户发来的消息格式 错误，应该发消息提示用户，这里从略
+//							System.err.println("用户发来的消息格式错误!");
+//						}
+//					}
+//				} catch (IOException e) {
+//					if (e.toString().endsWith("Connection reset")) 
+//					{System.out.println("服务器端退出");} 
+//					else {e.printStackTrace();}
+//				} 
+//				catch (ClassNotFoundException e) {e.printStackTrace();} 
+//				finally {
+//					if (socket != null) {
+//						try {socket.close();} 
+//						catch (IOException e) {e.printStackTrace();}
+//					}
+//				}
+//			}
+//
+//			// 处理用户状态消息
+//			private void processUserStateMessage(UserStateMessage msg) {
+//				String srcUser = msg.getSrcUser();
+//				String dstUser = msg.getDstUser();
+//				if (msg.getUserState()!=userStatus.offLine) {
+//					if (msg.isPubUserStateMessage())// 新用户上线消息
+//					{onlinUserDlm.addElement(srcUser);}
+//					if (dstUser.equals(srcID))// 用户在线消息
+//					{onlinUserDlm.addElement(srcUser);}
+//				} 
+//				else if (msg.getUserState()==userStatus.offLine) { // 用户下线消息
+//					if (onlinUserDlm.contains(srcUser)) 
+//					{onlinUserDlm.removeElement(srcUser);}
+//				}
+//			}
+//
+//			
+//		}
+//	}
+
+	
+	
+	
+	
 }

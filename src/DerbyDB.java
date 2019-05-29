@@ -95,7 +95,20 @@ public class DerbyDB {
     	catch (SQLException e) {e.printStackTrace();}
     	return false;
     }
-   
+
+	static public boolean resetStatus(String ID,int status)
+	{
+		try {
+			statement.executeUpdate("update AccountTable set Status="+status+" where ID='"+ID+"'");
+			return true;
+		} 
+		catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
+	
 	static public int getAccount0(String[] result)
      {
     	 try {
