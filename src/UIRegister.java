@@ -146,7 +146,7 @@ public class UIRegister extends JFrame {
 				
 					id=DerbyDB.getNewID();
 					JOptionPane.showMessageDialog(null,"ÄúµÄIDÊÇ£º"+id);
-					DerbyDB.insertAccountTable(id, password, userNameField.getText(), 1);
+					DerbyDB.insertAccountTable(id, password, userNameField.getText(), 0);
 				
 					System.out.println("×¢²áºó");
 					DerbyDB.showAccountTable();

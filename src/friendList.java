@@ -10,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 
+import javax.annotation.processing.Filer;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
@@ -37,6 +39,8 @@ import javax.swing.JTable;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+
+import com.sun.nio.sctp.SendFailedNotification;
 
 public class friendList extends JFrame {
 	//设置表头并禁止编辑表格内容
@@ -270,6 +274,10 @@ public class friendList extends JFrame {
 						{processUserStateMessage((UserStateMessage) msg);} 
 						else if(msg instanceof ChatMessage)//处理聊天信息
 						{processChatMessage((ChatMessage) msg);}
+						else if(msg instanceof FileSengMessage)
+						{processFileSendMessage((FileSengMessage)msg);}
+						else if(msg instanceof FileResponseMessage)
+						{processFileResponseMessage((FileResponseMessage)msg);}
 						else// 这种情况对应着用户发来的消息格式 错误，应该发消息提示用户，这里从略
 						{System.err.println("用户发来的消息格式错误!");}
 					}
@@ -318,7 +326,42 @@ public class friendList extends JFrame {
 					chatWindow.getChatWindow(srcUser).setmsg(msg);
 				}
 			}//处理消息结束
-			//打开子窗口
+			
+			// 处理服务器转发来的聊天消息
+			private void processFileSendMessage(FileSengMessage msg) {
+				String srcUser = msg.getSrcUser();//发消息的一方
+				String dstUser = msg.getDstUser();//接受处理消息的一方
+				String srcName=DerbyDB.getName(srcUser);
+				if(dstUser.equals(""))
+				{
+					openWindow("", "广播");
+					chatWindow.getChatWindow("").setmsg(msg);
+				}
+				else 
+				{
+					openWindow(srcUser, srcName);
+					chatWindow.getChatWindow(srcUser).setmsg(msg);
+				}
+			}//处理文件发送请求消息结束
+		
+			private void processFileResponseMessage(FileResponseMessage msg)
+			{
+				String srcUser = msg.getSrcUser();//发消息的一方
+				String dstUser = msg.getDstUser();//接受处理消息的一方
+				String srcName=DerbyDB.getName(srcUser);
+				if(dstUser.equals(""))
+				{
+//					openWindow("", "广播");
+//					chatWindow.getChatWindow("").setmsg(msg);
+					System.out.println("公聊文件上传在friendList处被截断");
+				}
+				else 
+				{
+					openWindow(srcUser, srcName);
+					chatWindow.getChatWindow(srcUser).setmsg(msg);
+				}
+				
+			}
 		}//监听程序结束
 	
 }//friendList结束

@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.Serializable;
 
 public class Message implements Serializable {
@@ -29,7 +30,6 @@ class ChatMessage extends Message {
 
 	public boolean isPubChatMessage() {return getDstUser().equals("");}
 }
-
 
 enum userStatus
 {
@@ -71,4 +71,37 @@ class UserStateMessage extends Message {
 	public void setUserState(userStatus userStatus) {this.userStatus = userStatus;}
 
 	public boolean isPubUserStateMessage() {return getDstUser().equals("");}
+}
+
+class FileSengMessage extends Message{
+	private File file;
+	public FileSengMessage(String srcUser, String dstUser, File file) {
+		super(srcUser, dstUser);
+		this.file = file;
+	}
+	public File getFile() {return file;}
+	public void setFile(File file) {this.file = file;}
+}
+class FileResponseMessage extends Message{
+	private int port;
+	private String ipAddress;
+	private File file;
+	private boolean agreeReceiveFile;
+	public FileResponseMessage(String srcUser, String dstUser, boolean agreeReceiveFile)
+	{
+		super(srcUser, dstUser);
+		this.agreeReceiveFile = agreeReceiveFile;
+	}
+	public int getPort() {return port;}
+	public void setPort(int port) {this.port = port;}
+	public String getIpAddress() {return ipAddress;}
+	public void setIpAddress(String ipAddress) {this.ipAddress = ipAddress;}
+		
+	public File getFile() {return file;}
+	public void setFile(File file) {this.file = file;}
+	public boolean isAgreeReceiveFile() {return agreeReceiveFile;}
+	public boolean isRefuseReceiveFile() {return !agreeReceiveFile;}
+	public void setIfAgreeReceiveFile(boolean agreeReceiveFile) {this.agreeReceiveFile = agreeReceiveFile;}
+	
+	
 }

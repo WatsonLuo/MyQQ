@@ -5,19 +5,23 @@ import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.processing.Filer;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -199,16 +203,16 @@ public class Server extends JFrame {
 				while (true) {
 					Message msg = (Message) ois.readObject();
 					System.out.println("服务器收到来自"+msg.getSrcUser()+"发送到"+msg.getDstUser()+"的信息");
-					if (msg instanceof UserStateMessage) {
-						// 处理用户状态消息
-						processUserStateMessage((UserStateMessage) msg);
-					} else if (msg instanceof ChatMessage) {
-						// 处理聊天消息
-						processChatMessage((ChatMessage) msg);
-					} else {
-						// 这种情况对应着用户发来的消息格式 错误，应该发消息提示用户，这里从略
-						System.err.println("用户发来的消息格式错误!");
-					}
+					if (msg instanceof UserStateMessage) // 处理用户状态消息
+					{processUserStateMessage((UserStateMessage) msg);} 
+					else if (msg instanceof ChatMessage) // 处理聊天消息
+					{processChatMessage((ChatMessage) msg);} 
+					else if(msg instanceof FileSengMessage)//处理发送文件消息
+					{processFileSendMessage((FileSengMessage)msg);}
+					else if(msg instanceof FileResponseMessage)//处理发送文件消息
+					{processFileResponseMessage((FileResponseMessage)msg);}
+					else // 这种情况对应着用户发来的消息格式 错误，应该发消息提示用户，这里从略
+					{System.err.println("用户发来的消息格式错误!");}
 				}
 			} 
 			catch (IOException e) {
@@ -258,7 +262,7 @@ public class Server extends JFrame {
 			catch (IOException e) {e.printStackTrace();}
 		}
 
-		// 处理用户状态消息
+		
 		private void processUserStateMessage(UserStateMessage msg) {
 			String srcUser = msg.getSrcUser();
 			UserStateMessage userStateMessage=null;
@@ -399,6 +403,59 @@ public class Server extends JFrame {
 				return;
 			}
 		}
+	
+		//处理用户的发送文件请求
+		private void processFileSendMessage(FileSengMessage msg) {
+			String srcUser = msg.getSrcUser();
+			String dstUser = msg.getDstUser();
+			File msgFile = msg.getFile();
+			if (userManager.hasUser(srcUser)) {
+				// 用黑色文字将收到消息的时间、发送消息的用户名和消息内容添加到“消息记录”文本框中
+				if (dstUser.equals("")) {
+					// 将公聊消息转发给所有其它在线用户
+					final String msgRecord = dateFormat.format(new Date()) + " 公聊文件发送请求：来自"
+							+ srcUser + "文件："+msgFile+"发送请求\r\n";
+					addMsgRecord(msgRecord, Color.orange, 12, false, false);
+					transferMsgToOtherUsers(msg);
+				} else {
+					// 将私聊消息转发给目标用户
+					final String msgRecord = dateFormat.format(new Date()) + " 私聊文件发送请求："
+							+ srcUser + "-->"+dstUser+" 文件:"+msgFile+"\r\n";
+					addMsgRecord(msgRecord, Color.orange, 12, false, false);
+					transferMsgToTheUsers(msg,dstUser);
+				}
+			} 
+			else {
+				// 这种情况对应着用户未发送上线消息就直接发送了聊天消息，应该发消息提示客户端，这里从略
+				System.err.println("用启未发送上线消息就直接发送了聊天消息");
+				return;
+			}
+		}
+	
+		private void processFileResponseMessage(FileResponseMessage msg)
+		{
+			String srcUser = msg.getSrcUser();
+			String dstUser = msg.getDstUser();
+			File msgFile = msg.getFile();
+			if (userManager.hasUser(srcUser)) {
+				// 用黑色文字将收到消息的时间、发送消息的用户名和消息内容添加到“消息记录”文本框中
+				if (dstUser.equals("")) {
+					// 将公聊消息转发给所有其它在线用户
+//					final String msgRecord = dateFormat.format(new Date()) + " 公聊文件发送请求：来自"
+//							+ srcUser + "文件："+msgFile+"发送请求\r\n";
+//					addMsgRecord(msgRecord, Color.orange, 12, false, false);
+//					transferMsgToOtherUsers(msg);
+					System.out.println("暂不支持公聊文件上传,该response消息在服务器端呗忽略");
+				} else {
+					// 将私聊消息转发给目标用户
+					final String msgRecord = dateFormat.format(new Date()) + " "+srcUser+"接受了来自"
+							+dstUser+" 的文件:"+msgFile+"\r\n";
+					addMsgRecord(msgRecord, Color.orange, 12, false, false);
+					transferMsgToTheUsers(msg,dstUser);
+				}
+			}
+		}
+	
 	}
 
 }
